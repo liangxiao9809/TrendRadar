@@ -1,72 +1,31 @@
+version: '3.8'
+
 services:
   trendradar:
-    image: wantcat/trendradar:latest
+    image: sansan0/trendradar:latest
     container_name: trendradar
     restart: unless-stopped
-
-    ports:
-      - "127.0.0.1:${WEBSERVER_PORT:-8080}:${WEBSERVER_PORT:-8080}"
-
     volumes:
-      - ../config:/app/config:ro
-      - ../output:/app/output
-
+      - ./config:/app/config
+      - ./output:/app/output
+      - ./custom_scripts:/app/custom_scripts
     environment:
-      - TZ=Asia/Shanghai
-      # Web 服务器
-      - ENABLE_WEBSERVER=${ENABLE_WEBSERVER:-false}
-      - WEBSERVER_PORT=${WEBSERVER_PORT:-8080}
-      # 通知渠道
-      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
-      - DINGTALK_WEBHOOK_URL=${DINGTALK_WEBHOOK_URL:-}
-      - WEWORK_WEBHOOK_URL=${WEWORK_WEBHOOK_URL:-}
-      - WEWORK_MSG_TYPE=${WEWORK_MSG_TYPE:-}
-      # 邮件配置
-      - EMAIL_FROM=${EMAIL_FROM:-}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
-      - EMAIL_TO=${EMAIL_TO:-}
-      - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-}
-      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-}
-      # ntfy配置
-      - NTFY_SERVER_URL=${NTFY_SERVER_URL:-https://ntfy.sh}
-      - NTFY_TOPIC=${NTFY_TOPIC:-}
-      - NTFY_TOKEN=${NTFY_TOKEN:-}
-      # Bark配置
-      - BARK_URL=${BARK_URL:-}
-      # Slack配置
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
-      # 通用Webhook配置
-      - GENERIC_WEBHOOK_URL=${GENERIC_WEBHOOK_URL:-}
-      - GENERIC_WEBHOOK_TEMPLATE=${GENERIC_WEBHOOK_TEMPLATE:-}
-      # AI 配置（ai_analysis 和 ai_translation 共享模型配置）
-      - AI_ANALYSIS_ENABLED=${AI_ANALYSIS_ENABLED:-}
-      - AI_API_KEY=${AI_API_KEY:-}
-      - AI_MODEL=${AI_MODEL:-}
-      - AI_API_BASE=${AI_API_BASE:-}
-      # 远程存储配置（S3 兼容协议）
-      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
-      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
-      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
-      - S3_REGION=${S3_REGION:-}
-      # 运行模式
-      - CRON_SCHEDULE=${CRON_SCHEDULE:-*/30 * * * *}
-      - RUN_MODE=${RUN_MODE:-cron}
-      - IMMEDIATE_RUN=${IMMEDIATE_RUN:-true}
+      - DINGTALK_WEBHOOK_URL=${DINGTALK_WEBHOOK_URL}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_PROVIDER=${AI_PROVIDER}
+      - AI_MODEL=${AI_MODEL}
+      - PUSH_MODE=incremental
+      - ENABLE_NOTIFICATION=true
+      - CUSTOM_ANALYSIS_SCRIPT=/app/custom_scripts/custom_analysis_workflow.py
+    command: >
+      sh -c "python -m trendradar.crawler &&
+             python /app/custom_scripts/custom_analysis_workflow.py"
 
-  trendradar-mcp:
-    image: wantcat/trendradar-mcp:latest
-    container_name: trendradar-mcp
+  # 可选：添加定时任务容器
+  cron:
+    image: alpine:latest
+    container_name: trendradar-cron
     restart: unless-stopped
-
-    ports:
-      - "127.0.0.1:3333:3333"
-
     volumes:
-      - ../config:/app/config:ro
-      - ../output:/app/output
-
-    environment:
-      - TZ=Asia/Shanghai
+      - ./docker/crontab:/etc/crontabs/root
+    command: crond -f -l 8

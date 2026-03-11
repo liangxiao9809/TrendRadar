@@ -1,0 +1,59 @@
+name: Investment Analysis Workflow
+
+on:
+  schedule:
+    # 每天股市开盘前、午间休市、收盘后各运行一次
+    - cron: '30 8 * * *'  # 早上8:30（开盘前）
+    - cron: '0 12 * * *'   # 中午12:00（午间）
+    - cron: '30 15 * * *'  # 下午15:30（收盘后）
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  investment-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install requests pyyaml
+
+    - name: Run TrendRadar crawler
+      env:
+        AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+        AI_MODEL: ${{ secrets.AI_MODEL }}
+      run: |
+        python -m trendradar.crawler
+
+    - name: Run investment analysis
+      env:
+        DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
+      run: |
+        python custom_analysis_workflow.py
+
+    - name: Upload analysis report
+      uses: actions/upload-artifact@v3
+      with:
+        name: investment-reports
+        path: |
+          output/investment_analysis.json
+          output/investment_report.html
+          output/dingtalk_investment.md
+
+    - name: Deploy to GitHub Pages
+      if: success()
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./output
+        keep_files: true

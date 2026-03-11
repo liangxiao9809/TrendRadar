@@ -1,0 +1,4 @@
+# 每天运行3次投资分析
+30 8 * * * docker exec trendradar python /app/custom_scripts/custom_analysis_workflow.py
+0 12 * * * docker exec trendradar python /app/custom_scripts/custom_analysis_workflow.py
+30 15 * * * docker exec trendradar python /app/custom_scripts/custom_analysis_workflow.py
