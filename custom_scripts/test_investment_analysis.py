@@ -9,7 +9,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from custom_investment_analyzer import InvestmentAnalyzer
+from custom_scripts.custom_investment_analyzer import InvestmentAnalyzer
 
 # 测试数据
 test_news = [

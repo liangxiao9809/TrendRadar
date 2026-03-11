@@ -34,7 +34,7 @@ def run_investment_analysis():
     result = analyzer.analyze_news(news_data)
 
     # 保存分析结果
-    output_dir = Path("output")
+    output_dir = Path("../output")
     output_dir.mkdir(exist_ok=True)
 
     # 保存JSON格式
